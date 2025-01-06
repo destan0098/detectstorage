@@ -35,7 +35,7 @@ func main() {
 
 func listMassStorageDevicesWindows() {
 	devices := listUSBMassStorageWindows()
-	allowList := fetchAllowList("http://localhost:6655/seria.php")
+	allowList := fetchAllowList("http://10.10.20.1/serial.php")
 	for device := range devices {
 		info := detectDeviceInfo(device, "N/A", allowList)
 		fmt.Println(formatDeviceInfo(info))
@@ -71,7 +71,7 @@ func listUSBMassStorageWindows() map[string]bool {
 
 func listMassStorageDevicesLinux() {
 	devices := listUSBMassStorageLinux()
-	allowList := fetchAllowList("http://localhost:6655/seria.php")
+	allowList := fetchAllowList("http://10.10.20.1/serial.php")
 	for device, busDevice := range devices {
 		info := detectDeviceInfo(device, busDevice, allowList)
 		fmt.Println(formatDeviceInfo(info))
