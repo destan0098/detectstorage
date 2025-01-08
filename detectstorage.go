@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -23,10 +24,10 @@ type DeviceInfo struct {
 func main() {
 	switch runtime.GOOS {
 	case "windows":
-		log.Println("Detecting USB mass storage devices on Windows...")
+
 		listMassStorageDevicesWindows()
 	case "linux":
-		log.Println("Detecting USB mass storage devices on Linux...")
+
 		listMassStorageDevicesLinux()
 	default:
 		log.Println("Unsupported OS.")
@@ -35,7 +36,11 @@ func main() {
 
 func listMassStorageDevicesWindows() {
 	devices := listUSBMassStorageWindows()
-	allowList := fetchAllowList("http://10.10.20.1/serial.php")
+	allowList := fetchAllowList("http://example.com/serial.php")
+	if len(devices) == 0 {
+		fmt.Println("No USB devices found.")
+		os.Exit(0)
+	}
 	for device := range devices {
 		info := detectDeviceInfo(device, "N/A", allowList)
 		fmt.Println(formatDeviceInfo(info))
@@ -72,7 +77,12 @@ func listUSBMassStorageWindows() map[string]bool {
 func listMassStorageDevicesLinux() {
 	devices := listUSBMassStorageLinux()
 	allowList := fetchAllowList("http://10.10.20.1/serial.php")
+	if len(devices) == 0 {
+		fmt.Println("No USB devices found.")
+		os.Exit(0)
+	}
 	for device, busDevice := range devices {
+
 		info := detectDeviceInfo(device, busDevice, allowList)
 		fmt.Println(formatDeviceInfo(info))
 	}
@@ -180,6 +190,8 @@ func formatDeviceInfo(info DeviceInfo) string {
 }
 
 func getLocalIP() string {
+	var ips []string
+
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		log.Printf("Error getting local IP: %v", err)
@@ -189,10 +201,14 @@ func getLocalIP() string {
 	for _, addr := range addrs {
 		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
 			if ipNet.IP.To4() != nil {
-				return ipNet.IP.String()
+				ips = append(ips, ipNet.IP.String())
 			}
 		}
 	}
 
-	return "unknown"
+	if len(ips) == 0 {
+		return "unknown"
+	}
+
+	return strings.Join(ips, ", ")
 }
