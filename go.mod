@@ -1,3 +1,3 @@
-module github.com/destan0098/detectstorage
+module Detectstorage
 
 go 1.23

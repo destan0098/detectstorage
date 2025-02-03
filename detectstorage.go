@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -12,6 +11,10 @@ import (
 	"runtime"
 	"strings"
 )
+
+//const ipAdd = "http://10.30.20.1/serial.txt"
+
+const ipAdd = "http://10.10.20.1/serial.txt"
 
 type DeviceInfo struct {
 	Device    string `json:"device"`
@@ -36,29 +39,22 @@ func main() {
 
 func listMassStorageDevicesWindows() {
 	devices := listUSBMassStorageWindows()
-	allowList := fetchAllowList("http://example.com/serial.php")
+	allowList := fetchAllowList(ipAdd)
 	if len(devices) == 0 {
 		fmt.Println("No USB devices found.")
 		os.Exit(0)
 	}
-	var deviceInfos []DeviceInfo
+
 	for device, name := range devices {
 		info := detectDeviceInfo(device, "N/A", name, allowList)
-		deviceInfos = append(deviceInfos, info)
+		fmt.Println(formatDeviceInfo(info))
 	}
-
-	// تبدیل به JSON و چاپ
-	jsonOutput, err := json.MarshalIndent(deviceInfos, "", "  ")
-	if err != nil {
-		log.Fatalf("Error converting to JSON: %v", err)
-	}
-	fmt.Println(string(jsonOutput))
 }
 
 func listUSBMassStorageWindows() map[string]string {
 	devices := make(map[string]string)
 
-	cmd := exec.Command("wmic", "diskdrive", "where", "MediaType='Removable Media'", "get", "Model,SerialNumber,Status")
+	cmd := exec.Command("wmic", "diskdrive", "where", "InterfaceType='USB'", "get", "Model,SerialNumber,InterfaceType,Size,MediaType")
 	output, err := cmd.Output()
 	if err != nil {
 		log.Printf("Error listing USB devices on Windows: %v", err)
@@ -85,23 +81,17 @@ func listUSBMassStorageWindows() map[string]string {
 
 func listMassStorageDevicesLinux() {
 	devices := listUSBMassStorageLinux()
-	allowList := fetchAllowList("http://10.10.20.1/serial.php")
+	allowList := fetchAllowList(ipAdd)
 	if len(devices) == 0 {
 		fmt.Println("No USB devices found.")
 		os.Exit(0)
 	}
-	var deviceInfos []DeviceInfo
+
 	for device, info := range devices {
 		detectedInfo := detectDeviceInfo(device, info.BusDevice, info.Name, allowList)
-		deviceInfos = append(deviceInfos, detectedInfo)
+		fmt.Println(formatDeviceInfo(detectedInfo))
 	}
 
-	// تبدیل به JSON و چاپ
-	jsonOutput, err := json.MarshalIndent(deviceInfos, "", "  ")
-	if err != nil {
-		log.Fatalf("Error converting to JSON: %v", err)
-	}
-	fmt.Println(string(jsonOutput))
 }
 
 func extractWindowsLikeSerial(serial string) string {
