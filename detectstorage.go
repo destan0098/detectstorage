@@ -46,6 +46,7 @@ func listMassStorageDevicesWindows() {
 	}
 
 	for device, name := range devices {
+
 		info := detectDeviceInfo(device, "N/A", name, allowList)
 		fmt.Println(formatDeviceInfo(info))
 	}
@@ -62,21 +63,36 @@ func listUSBMassStorageWindows() map[string]string {
 	}
 
 	lines := strings.Split(string(output), "\n")
+	if len(lines) < 2 {
+		log.Println("No USB devices found in WMIC output.")
+		return devices
+	}
+
+	// **حذف خط اول (هدر)**
+	lines = lines[1:]
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "Model") {
+		if line == "" {
 			continue
 		}
 
 		parts := strings.Fields(line)
-		if len(parts) >= 3 {
-			model := strings.Join(parts[:len(parts)-2], " ")
-			serial := parts[len(parts)-2]
-			devices[serial] = model
+
+		// **اطمینان از اینکه تعداد ستون‌های کافی وجود دارد**
+		if len(parts) < 2 {
+			continue
 		}
+
+		// **استخراج Model و SerialNumber**
+		serial := parts[len(parts)-2]                    // ستون قبل از آخرین مقدار (Size یا MediaType)
+		model := strings.Join(parts[:len(parts)-2], " ") // بقیه‌ی مقدار به‌عنوان Model
+
+		devices[serial] = model
 	}
 
 	return devices
+
 }
 
 func listMassStorageDevicesLinux() {
@@ -170,7 +186,7 @@ func listUSBMassStorageLinux() map[string]struct {
 
 func fetchAllowList(url string) map[string]bool {
 	allowList := make(map[string]bool)
-
+	//
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("Error fetching allow list: %v", err)
